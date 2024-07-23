@@ -92,7 +92,7 @@
     </div>
 
     <script>
-        // Your web app's Firebase configuration
+        // Configuration Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyB6AUBnK_7Vy2ABWI2JMo3ebG_Sljr8XlY",
             authDomain: "cyber-campus-2706f.firebaseapp.com",
@@ -104,13 +104,13 @@
             measurementId: "G-CEEFJP5LYZ"
         };
 
-        // Initialize Firebase
+        // Initialisation Firebase
         firebase.initializeApp(firebaseConfig);
 
-        // Reference to the database
+        // Référence à la base de données
         var database = firebase.database();
 
-        // Check if user is logged in
+        // Vérifier l'authentification
         function checkAuth() {
             var user = sessionStorage.getItem('user');
             if (user) {
@@ -122,9 +122,10 @@
             }
         }
 
-        // Initial auth check
+        // Vérification initiale de l'authentification
         checkAuth();
 
+        // Fonction de connexion
         function login() {
             var username = document.getElementById('username').value;
             var password = document.getElementById('password').value;
@@ -133,21 +134,27 @@
                 var userData = snapshot.val();
                 if (userData && userData.password === password) {
                     sessionStorage.setItem('user', username);
-                    checkAuth();
+                    checkAuth(); // Mise à jour de l'interface
                 } else {
                     alert('Nom d\'utilisateur ou mot de passe incorrect');
                 }
             });
         }
 
+        // Fonction de déconnexion
         function logout() {
             sessionStorage.removeItem('user');
-            checkAuth();
+            checkAuth(); // Mise à jour de l'interface
         }
 
-        // Call this function to add the default user
-        addDefaultUser();
+        // Fonction pour ajouter l'utilisateur par défaut
+        function addDefaultUser() {
+            database.ref('Convertisseur Json/admin').set({
+                password: 'admin'
+            });
+        }
 
+        // Début du code pour le convertisseur JSON
         let jsonResult = {};
 
         function convertToJson() {
