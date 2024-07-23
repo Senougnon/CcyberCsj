@@ -145,13 +145,6 @@
             checkAuth();
         }
 
-        // Add default user to the database
-        function addDefaultUser() {
-            database.ref('Convertisseur Json/Admin').set({
-                password: '115599'
-            });
-        }
-
         // Call this function to add the default user
         addDefaultUser();
 
