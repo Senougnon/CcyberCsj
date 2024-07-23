@@ -175,14 +175,8 @@
         }
 
         function processData(data, paymentLink, ticketCategory, price) {
-            const profileName = data[1][2]; // Supposons que le nom du profil est dans la troisième colonne
-
-            if (!jsonResult[profileName]) {
-                jsonResult[profileName] = {};
-            }
-
-            if (!jsonResult[profileName][ticketCategory]) {
-                jsonResult[profileName][ticketCategory] = {
+            if (!jsonResult[ticketCategory]) {
+                jsonResult[ticketCategory] = {
                     lienPaiement: paymentLink,
                     motDePasse: [],
                     prix: [],
@@ -192,9 +186,9 @@
 
             for (let i = 1; i < data.length; i++) {
                 if (data[i][0] && data[i][1]) {
-                    jsonResult[profileName][ticketCategory].utilisateur.push(data[i][0]);
-                    jsonResult[profileName][ticketCategory].motDePasse.push(data[i][1]);
-                    jsonResult[profileName][ticketCategory].prix.push(price);
+                    jsonResult[ticketCategory].utilisateur.push(data[i][0]);
+                    jsonResult[ticketCategory].motDePasse.push(data[i][1]);
+                    jsonResult[ticketCategory].prix.push(price);
                 }
             }
 
