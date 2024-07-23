@@ -78,6 +78,7 @@
             <input type="file" id="csvFile" accept=".csv">
             
             <input type="text" id="paymentLink" placeholder="Entrez le lien de paiement">
+            <input type="text" id="ticketCategory" placeholder="Entrez la catégorie de ticket">
             <input type="number" id="price" placeholder="Entrez le prix">
             
             <button onclick="convertToJson()">Convertir en JSON</button>
@@ -86,6 +87,9 @@
             <div id="result"></div>
             
             <button id="downloadBtn" style="display: none;" onclick="downloadJson()">Télécharger JSON</button>
+            <input type="file" id="jsonFile" accept=".json" style="display: none;">
+            <button id="editBtn" onclick="showEditFile()">Éditer JSON</button>
+            <button id="importBtn" style="display: none;" onclick="importJson()">Importer JSON</button>
             
             <button onclick="logout()">Se déconnecter</button>
         </div>
@@ -160,36 +164,43 @@
         function convertToJson() {
             const csvContent = document.getElementById('csvInput').value;
             const paymentLink = document.getElementById('paymentLink').value;
+            const ticketCategory = document.getElementById('ticketCategory').value;
             const price = document.getElementById('price').value;
 
             Papa.parse(csvContent, {
                 complete: function(results) {
-                    processData(results.data, paymentLink, price);
+                    processData(results.data, paymentLink, ticketCategory, price);
                 }
             });
         }
 
-        function processData(data, paymentLink, price) {
-            jsonResult = {};
+        function processData(data, paymentLink, ticketCategory, price) {
             const profileName = data[1][2]; // Supposons que le nom du profil est dans la troisième colonne
 
-            jsonResult[profileName] = {
-                lienPaiement: paymentLink,
-                motDePasse: [],
-                prix: [],
-                utilisateur: []
-            };
+            if (!jsonResult[profileName]) {
+                jsonResult[profileName] = {};
+            }
+
+            if (!jsonResult[profileName][ticketCategory]) {
+                jsonResult[profileName][ticketCategory] = {
+                    lienPaiement: paymentLink,
+                    motDePasse: [],
+                    prix: [],
+                    utilisateur: []
+                };
+            }
 
             for (let i = 1; i < data.length; i++) {
                 if (data[i][0] && data[i][1]) {
-                    jsonResult[profileName].utilisateur.push(data[i][0]);
-                    jsonResult[profileName].motDePasse.push(data[i][1]);
-                    jsonResult[profileName].prix.push(price);
+                    jsonResult[profileName][ticketCategory].utilisateur.push(data[i][0]);
+                    jsonResult[profileName][ticketCategory].motDePasse.push(data[i][1]);
+                    jsonResult[profileName][ticketCategory].prix.push(price);
                 }
             }
 
             document.getElementById('result').textContent = JSON.stringify(jsonResult, null, 2);
             document.getElementById('downloadBtn').style.display = 'block';
+            document.getElementById('editBtn').style.display = 'block';
         }
 
         function downloadJson() {
@@ -200,6 +211,26 @@
             document.body.appendChild(downloadAnchorNode);
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
+        }
+
+        function showEditFile() {
+            document.getElementById('jsonFile').style.display = 'block';
+            document.getElementById('importBtn').style.display = 'block';
+        }
+
+        function importJson() {
+            const file = document.getElementById('jsonFile').files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    jsonResult = JSON.parse(e.target.result);
+                    document.getElementById('result').textContent = JSON.stringify(jsonResult, null, 2);
+                } catch (error) {
+                    alert('Erreur lors de l\'importation du fichier JSON : ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            document.getElementById('jsonFile').style.display = 'none';
         }
 
         document.getElementById('csvFile').addEventListener('change', function(e) {
