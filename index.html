@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertisseur CSV vers JSON pour Tickets</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="file"], input[type="text"], input[type="number"], input[type="password"], button {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            white-space: pre-wrap;
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        #loginForm, #app {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="loginForm">
+            <h2>Connexion</h2>
+            <input type="text" id="username" placeholder="Nom d'utilisateur">
+            <input type="password" id="password" placeholder="Mot de passe">
+            <button onclick="login()">Se connecter</button>
+        </div>
+
+        <div id="app">
+            <h1>Convertisseur CSV vers JSON pour Tickets</h1>
+            
+            <textarea id="csvInput" placeholder="Collez votre contenu CSV ici"></textarea>
+            <input type="file" id="csvFile" accept=".csv">
+            
+            <input type="text" id="paymentLink" placeholder="Entrez le lien de paiement">
+            <input type="number" id="price" placeholder="Entrez le prix">
+            
+            <button onclick="convertToJson()">Convertir en JSON</button>
+            
+            <h2>Résultat :</h2>
+            <div id="result"></div>
+            
+            <button id="downloadBtn" style="display: none;" onclick="downloadJson()">Télécharger JSON</button>
+            
+            <button onclick="logout()">Se déconnecter</button>
+        </div>
+    </div>
+
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyB6AUBnK_7Vy2ABWI2JMo3ebG_Sljr8XlY",
+            authDomain: "cyber-campus-2706f.firebaseapp.com",
+            databaseURL: "https://cyber-campus-2706f-default-rtdb.firebaseio.com",
+            projectId: "cyber-campus-2706f",
+            storageBucket: "cyber-campus-2706f.appspot.com",
+            messagingSenderId: "719410601264",
+            appId: "1:719410601264:web:44fd2e3757721866303cf5",
+            measurementId: "G-CEEFJP5LYZ"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Reference to the database
+        var database = firebase.database();
+
+        // Check if user is logged in
+        function checkAuth() {
+            var user = sessionStorage.getItem('user');
+            if (user) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } else {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('app').style.display = 'none';
+            }
+        }
+
+        // Initial auth check
+        checkAuth();
+
+        function login() {
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+
+            database.ref('Convertisseur Json/' + username).once('value').then(function(snapshot) {
+                var userData = snapshot.val();
+                if (userData && userData.password === password) {
+                    sessionStorage.setItem('user', username);
+                    checkAuth();
+                } else {
+                    alert('Nom d\'utilisateur ou mot de passe incorrect');
+                }
+            });
+        }
+
+        function logout() {
+            sessionStorage.removeItem('user');
+            checkAuth();
+        }
+
+        // Add default user to the database
+        function addDefaultUser() {
+            database.ref('Convertisseur Json/Admin').set({
+                password: '115599'
+            });
+        }
+
+        // Call this function to add the default user
+        addDefaultUser();
+
+        let jsonResult = {};
+
+        function convertToJson() {
+            const csvContent = document.getElementById('csvInput').value;
+            const paymentLink = document.getElementById('paymentLink').value;
+            const price = document.getElementById('price').value;
+
+            Papa.parse(csvContent, {
+                complete: function(results) {
+                    processData(results.data, paymentLink, price);
+                }
+            });
+        }
+
+        function processData(data, paymentLink, price) {
+            jsonResult = {};
+            const profileName = data[1][2]; // Supposons que le nom du profil est dans la troisième colonne
+
+            jsonResult[profileName] = {
+                lienPaiement: paymentLink,
+                motDePasse: [],
+                prix: [],
+                utilisateur: []
+            };
+
+            for (let i = 1; i < data.length; i++) {
+                if (data[i][0] && data[i][1]) {
+                    jsonResult[profileName].utilisateur.push(data[i][0]);
+                    jsonResult[profileName].motDePasse.push(data[i][1]);
+                    jsonResult[profileName].prix.push(price);
+                }
+            }
+
+            document.getElementById('result').textContent = JSON.stringify(jsonResult, null, 2);
+            document.getElementById('downloadBtn').style.display = 'block';
+        }
+
+        function downloadJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(jsonResult));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "Tickets.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('csvInput').value = e.target.result;
+            };
+            reader.readAsText(file);
+        });
+    </script>
+</body>
+</html>
